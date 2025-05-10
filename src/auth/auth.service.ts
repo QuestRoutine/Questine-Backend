@@ -1,5 +1,6 @@
 import {
   ConflictException,
+  ForbiddenException,
   Injectable,
   InternalServerErrorException,
   UnauthorizedException,
@@ -9,6 +10,7 @@ import { PrismaService } from 'src/prisma.service';
 import { JwtService } from '@nestjs/jwt';
 import * as bcrypt from 'bcryptjs';
 import { ConfigService } from '@nestjs/config';
+import { users } from 'generated/prisma';
 
 @Injectable()
 export class AuthService {
@@ -64,24 +66,47 @@ export class AuthService {
 
   async signin(authDto: AuthDto) {
     const { email, password } = authDto;
+
+    const user = await this.prisma.users.findUnique({
+      where: { email },
+    });
+
+    const isPasswordValid = await bcrypt.compare(password, user.password);
+
+    if (!user || !isPasswordValid) {
+      throw new UnauthorizedException('이메일 또는 비밀번호가 잘못되었습니다.');
+    }
+
+    const { accessToken, refreshToken } = await this.getTokens({ email });
+    await this.updatedRefreshToken(user.userId, refreshToken);
+
+    return { accessToken, refreshToken };
+  }
+
+  private async updatedRefreshToken(userId: number, refreshToken: string) {
+    const salt = await bcrypt.genSalt(10);
+    const hashedRefreshToken = await bcrypt.hash(refreshToken, salt);
+    try {
+      await this.prisma.users.update({
+        where: { userId },
+        data: { refreshToken: hashedRefreshToken },
+      });
+    } catch (error) {
+      console.log(error);
+      throw new InternalServerErrorException(
+        '회원가입 중 오류가 발생했습니다.',
+      );
+    }
+  }
+
+  async refresh(user: users) {
+    const { email } = user;
     const { accessToken, refreshToken } = await this.getTokens({ email });
 
-    try {
-      const user = await this.prisma.users.findUnique({
-        where: { email },
-      });
-
-      // 비밀번호 확인
-      const isPasswordValid = await bcrypt.compare(password, user.password);
-
-      if (!user || !isPasswordValid) {
-        throw new UnauthorizedException(
-          '이메일 또는 비밀번호가 잘못되었습니다.',
-        );
-      }
-      return { accessToken, refreshToken };
-    } catch (error) {
-      throw new InternalServerErrorException('서버 오류 발생');
+    if (!user.refreshToken) {
+      throw new ForbiddenException('유효하지 않은 토큰입니다.');
     }
+    await this.updatedRefreshToken(user.userId, user.refreshToken);
+    return { accessToken, refreshToken };
   }
 }

@@ -1,6 +1,16 @@
-import { Controller, Post, Body, ValidationPipe } from '@nestjs/common';
+import {
+  Controller,
+  Post,
+  Body,
+  ValidationPipe,
+  Get,
+  UseGuards,
+} from '@nestjs/common';
 import { AuthService } from './auth.service';
 import { AuthDto } from './dto/auth.dto';
+import { User } from 'src/common/user.decorator';
+import { AuthGuard } from '@nestjs/passport';
+import { users } from 'generated/prisma';
 
 @Controller('auth')
 export class AuthController {
@@ -14,5 +24,11 @@ export class AuthController {
   @Post('/signin')
   signin(@Body(ValidationPipe) authDto: AuthDto) {
     return this.authService.signin(authDto);
+  }
+
+  @Get('/refresh')
+  @UseGuards(AuthGuard())
+  refresh(@User() user: users) {
+    return this.authService.refresh(user);
   }
 }
