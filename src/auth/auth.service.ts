@@ -1,4 +1,5 @@
 import {
+  BadRequestException,
   ConflictException,
   ForbiddenException,
   Injectable,
@@ -71,7 +72,9 @@ export class AuthService {
       where: { email },
     });
 
-    const isPasswordValid = await bcrypt.compare(password, user.password);
+    const isPasswordValid = user
+      ? await bcrypt.compare(password, user.password)
+      : false;
 
     if (!user || !isPasswordValid) {
       throw new UnauthorizedException('이메일 또는 비밀번호가 잘못되었습니다.');
@@ -79,6 +82,14 @@ export class AuthService {
 
     const { accessToken, refreshToken } = await this.getTokens({ email });
     await this.updatedRefreshToken(user.userId, refreshToken);
+    await this.prisma.users.update({
+      where: {
+        userId: user.userId,
+      },
+      data: {
+        updatedAt: new Date(),
+      },
+    });
 
     return { accessToken, refreshToken };
   }
@@ -108,5 +119,32 @@ export class AuthService {
     }
     await this.updatedRefreshToken(user.userId, user.refreshToken);
     return { accessToken, refreshToken };
+  }
+
+  async logout(user: users) {
+    try {
+      await this.prisma.users.update({
+        where: { userId: user.userId },
+        data: {
+          refreshToken: null,
+        },
+      });
+      return { message: '로그아웃 완료' };
+    } catch (error) {
+      console.log(error);
+      throw new InternalServerErrorException('서버 에러');
+    }
+  }
+
+  async deleteAccount(user: users) {
+    try {
+      await this.prisma.users.delete({
+        where: { userId: user.userId },
+      });
+      return { message: '계정 삭제 완료' };
+    } catch (error) {
+      console.log(error);
+      throw new BadRequestException('탈퇴가 불가능합니다.');
+    }
   }
 }
