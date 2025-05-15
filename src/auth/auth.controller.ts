@@ -39,6 +39,12 @@ export class AuthController {
     return this.authService.logout(user);
   }
 
+  @Get('/me')
+  @UseGuards(AuthGuard())
+  getMe(@User() user: users) {
+    return this.authService.getMe(user);
+  }
+
   @Delete('/me')
   @UseGuards(AuthGuard())
   deleteAccount(@User() user: users) {
