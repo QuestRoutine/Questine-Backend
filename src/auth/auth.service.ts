@@ -12,6 +12,7 @@ import { JwtService } from '@nestjs/jwt';
 import * as bcrypt from 'bcryptjs';
 import { ConfigService } from '@nestjs/config';
 import { users } from 'generated/prisma';
+import { v4 as uuidv4 } from 'uuid';
 
 @Injectable()
 export class AuthService {
@@ -30,6 +31,8 @@ export class AuthService {
         data: {
           email,
           password: hashedPassword,
+          login_type: 'email',
+          nickname: '모험가' + uuidv4().split('-').join(''),
         },
       });
 
