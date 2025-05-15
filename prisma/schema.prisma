@@ -9,17 +9,17 @@ datasource db {
 }
 
 model users {
-  userId       Int       @id @default(autoincrement())
-  loginType    String?
-  email        String    @unique(map: "email") @db.VarChar
-  password     String    @db.VarChar
-  nickname     String?   @db.VarChar
-  pushToken    String?   @db.VarChar
-  gold         Int?      @default(0)
-  exp          Int?      @default(0)
-  createdAt    DateTime  @default(now()) @db.Timestamptz(6)
-  updatedAt    DateTime  @default(now()) @db.Timestamptz(6)
-  deletedAt    DateTime? @db.Timestamptz(6)
-  level        Int?      @default(1)
-  refreshToken String?   @db.VarChar
+  user_id       Int       @id @default(autoincrement())
+  login_type    String?
+  email         String    @unique @db.VarChar
+  password      String    @db.VarChar
+  nickname      String?   @db.VarChar
+  push_token    String?   @db.VarChar
+  gold          Int?      @default(0)
+  exp           Int?      @default(0)
+  created_at    DateTime  @default(now()) @db.Timestamptz(6)
+  updated_at    DateTime  @default(now()) @db.Timestamptz(6)
+  deleted_at    DateTime? @db.Timestamptz(6)
+  level         Int?      @default(1)
+  refresh_token String?   @db.VarChar
 }

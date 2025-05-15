@@ -81,13 +81,13 @@ export class AuthService {
     }
 
     const { accessToken, refreshToken } = await this.getTokens({ email });
-    await this.updatedRefreshToken(user.userId, refreshToken);
+    await this.updatedRefreshToken(user.user_id, refreshToken);
     await this.prisma.users.update({
       where: {
-        userId: user.userId,
+        user_id: user.user_id,
       },
       data: {
-        updatedAt: new Date(),
+        updated_at: new Date(),
       },
     });
 
@@ -99,8 +99,8 @@ export class AuthService {
     const hashedRefreshToken = await bcrypt.hash(refreshToken, salt);
     try {
       await this.prisma.users.update({
-        where: { userId },
-        data: { refreshToken: hashedRefreshToken },
+        where: { user_id: userId },
+        data: { refresh_token: hashedRefreshToken },
       });
     } catch (error) {
       console.log(error);
@@ -114,19 +114,19 @@ export class AuthService {
     const { email } = user;
     const { accessToken, refreshToken } = await this.getTokens({ email });
 
-    if (!user.refreshToken) {
+    if (!user.refresh_token) {
       throw new ForbiddenException('유효하지 않은 토큰입니다.');
     }
-    await this.updatedRefreshToken(user.userId, user.refreshToken);
+    await this.updatedRefreshToken(user.user_id, user.refresh_token);
     return { accessToken, refreshToken };
   }
 
   async logout(user: users) {
     try {
       await this.prisma.users.update({
-        where: { userId: user.userId },
+        where: { user_id: user.user_id },
         data: {
-          refreshToken: null,
+          refresh_token: null,
         },
       });
       return { message: '로그아웃 완료' };
@@ -136,10 +136,16 @@ export class AuthService {
     }
   }
 
+  async getMe(user: users) {
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    const { refresh_token, password, login_type, push_token, ...userData } =
+      user;
+    return userData;
+  }
   async deleteAccount(user: users) {
     try {
       await this.prisma.users.delete({
-        where: { userId: user.userId },
+        where: { user_id: user.user_id },
       });
       return { message: '계정 삭제 완료' };
     } catch (error) {
