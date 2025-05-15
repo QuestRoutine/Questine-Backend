@@ -9,17 +9,100 @@ datasource db {
 }
 
 model users {
-  user_id       Int       @id @default(autoincrement())
+  user_id       Int          @id @default(autoincrement())
   login_type    String?
-  email         String    @unique @db.VarChar
-  password      String    @db.VarChar
-  nickname      String?   @db.VarChar
-  push_token    String?   @db.VarChar
-  gold          Int?      @default(0)
-  exp           Int?      @default(0)
+  email         String       @unique @db.VarChar
+  password      String       @db.VarChar
+  nickname      String?      @unique @db.VarChar
+  push_token    String?
+  gold          Int?         @default(0)
+  exp           Int?         @default(0)
+  created_at    DateTime     @default(now()) @db.Timestamptz(6)
+  updated_at    DateTime     @default(now()) @db.Timestamptz(6)
+  deleted_at    DateTime?    @db.Timestamptz(6)
+  level         Int?         @default(1)
+  refresh_token String?
+  award_logs    award_logs[]
+  characters    characters?
+  exp_logs      exp_logs[]
+  todo_logs     todo_logs[]
+  todos         todos[]
+}
+
+model todos {
+  todo_id      Int         @id @default(autoincrement())
+  user_id      Int
+  content      String      @db.VarChar
+  completed    Boolean?    @default(false)
+  exp_reward   Int         @default(10)
+  created_at   DateTime?   @default(now()) @db.Timestamptz(6)
+  completed_at DateTime?   @db.Timestamptz(6)
+  updated_at   DateTime?   @default(now()) @db.Timestamptz(6)
+  exp_logs     exp_logs[]
+  todo_logs    todo_logs[]
+  users        users       @relation(fields: [user_id], references: [user_id], onDelete: Cascade, onUpdate: NoAction)
+}
+
+model award_logs {
+  user_award_id Int       @id @default(autoincrement())
+  user_id       Int
+  award_id      Int
+  progress      Int?      @default(0)
+  is_unlocked   Boolean?  @default(false)
+  unlocked_at   DateTime? @db.Timestamptz(6)
   created_at    DateTime  @default(now()) @db.Timestamptz(6)
   updated_at    DateTime  @default(now()) @db.Timestamptz(6)
-  deleted_at    DateTime? @db.Timestamptz(6)
-  level         Int?      @default(1)
-  refresh_token String?   @db.VarChar
+  awards        awards    @relation(fields: [award_id], references: [award_id], onDelete: Cascade, onUpdate: NoAction)
+  users         users     @relation(fields: [user_id], references: [user_id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@unique([user_id, award_id])
+}
+
+model awards {
+  award_id     Int          @id @default(autoincrement())
+  title        String       @db.VarChar
+  description  String?
+  icon         String?      @db.VarChar
+  max_progress Int?         @default(1)
+  reward_xp    Int?         @default(0)
+  reward_gold  Int?         @default(0)
+  created_at   DateTime     @default(now()) @db.Timestamptz(6)
+  updated_at   DateTime     @default(now()) @db.Timestamptz(6)
+  award_logs   award_logs[]
+}
+
+model characters {
+  character_id   Int      @id @default(autoincrement())
+  user_id        Int      @unique
+  level          Int?     @default(1)
+  exp            Int?     @default(0)
+  next_level_exp Int?     @default(1000)
+  health         Int?     @default(100)
+  attack         Int?     @default(10)
+  defense        Int?     @default(5)
+  created_at     DateTime @default(now()) @db.Timestamptz(6)
+  updated_at     DateTime @default(now()) @db.Timestamptz(6)
+  users          users    @relation(fields: [user_id], references: [user_id], onDelete: Cascade, onUpdate: NoAction)
+}
+
+model exp_logs {
+  exp_log_id Int       @id @default(autoincrement())
+  user_id    Int?
+  todo_id    Int?
+  exp        Int
+  reason     String?
+  created_at DateTime? @default(now()) @db.Timestamp(6)
+  todos      todos?    @relation(fields: [todo_id], references: [todo_id], onDelete: NoAction, onUpdate: NoAction)
+  users      users?    @relation(fields: [user_id], references: [user_id], onDelete: NoAction, onUpdate: NoAction)
+}
+
+model todo_logs {
+  id          Int       @id @default(autoincrement())
+  todo_id     Int?
+  user_id     Int?
+  action      String    @db.VarChar(20)
+  description String?
+  created_at  DateTime? @default(now()) @db.Timestamp(6)
+  todos       todos?    @relation(fields: [todo_id], references: [todo_id], onDelete: NoAction, onUpdate: NoAction)
+  users       users?    @relation(fields: [user_id], references: [user_id], onDelete: NoAction, onUpdate: NoAction)
 }
