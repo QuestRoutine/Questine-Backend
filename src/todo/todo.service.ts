@@ -1,4 +1,8 @@
-import { BadRequestException, Injectable } from '@nestjs/common';
+import {
+  BadRequestException,
+  ForbiddenException,
+  Injectable,
+} from '@nestjs/common';
 import { users } from 'generated/prisma';
 import { PrismaService } from 'src/prisma.service';
 import { AddTodoDto } from './dto/addTodo.dto';
@@ -26,9 +30,8 @@ export class TodoService {
   - 로그 기록
   - 경험치 지급
   - 업적 체크
-  
   */
-  async completeTodo(id: number): Promise<void> {
+  async completeTodo(id: number): Promise<{ exp: number; exp_given: boolean }> {
     const todo = await this.prisma.todos.findUnique({
       where: { todo_id: id },
     });
@@ -43,13 +46,14 @@ export class TodoService {
             completed_at: new Date(),
             updated_at: new Date(),
             exp_given: true,
+            exp_reward: 100,
           },
         });
 
         // 경험치 지급
         await prisma.users.update({
           where: { user_id: todo.user_id },
-          data: { exp: { increment: 1000 } },
+          data: { exp: { increment: 100 } },
         });
 
         // 경험치 로그 기록
@@ -57,10 +61,28 @@ export class TodoService {
           data: {
             user_id: todo.user_id,
             todo_id: todo.todo_id,
-            exp: 1000,
+            exp: 100,
             created_at: new Date(),
           },
         });
+
+        // 레벨업 체크 및 처리
+        const updatedUser = await prisma.users.findUnique({
+          where: { user_id: todo.user_id },
+          select: { exp: true, level: true },
+        });
+        // console.log(updatedUser);
+        const expPerLevel = 1000;
+        const newLevel = Math.floor(updatedUser.exp / expPerLevel) + 1;
+        if (newLevel > updatedUser.level) {
+          await prisma.users.update({
+            where: { user_id: todo.user_id },
+            data: {
+              level: newLevel,
+              exp: 0, // 레벨업 시 경험치 0으로 초기화
+            },
+          });
+        }
 
         // 로그 기록
         await prisma.todo_logs.create({
@@ -73,6 +95,15 @@ export class TodoService {
         });
         // 업적 체크 등 추가 로직 (예정)
       });
+      // 트랜잭션 이후 최신 exp_reward 값 조회
+      const updatedTodo = await this.prisma.todos.findUnique({
+        where: { todo_id: id },
+        select: { exp_reward: true, exp_given: true },
+      });
+      return {
+        exp: updatedTodo.exp_reward,
+        exp_given: updatedTodo.exp_given,
+      };
     } else if (!todo.completed && todo.exp_given) {
       // 미완료된 할일을 체크했지만 해당 할 일에서 경험치를 먹은 이력이 있을 경우
       // 경험치 중복 획득 방지 (최초 1회만 획득)
@@ -84,18 +115,28 @@ export class TodoService {
           updated_at: new Date(),
         },
       });
+      // exp_reward 값 반환
+      const updatedTodo = await this.prisma.todos.findUnique({
+        where: { todo_id: id },
+        select: { exp_reward: true, exp_given: true },
+      });
+      return {
+        exp: updatedTodo.exp_reward,
+        exp_given: updatedTodo.exp_given,
+      };
     }
   }
 
   // 할 일 추가
   async addTodo(user: users, addTodoDto: AddTodoDto) {
     const { user_id } = user;
-    const { content } = addTodoDto;
+    const { content, created_at } = addTodoDto;
     const data = await this.prisma.todos.create({
       data: {
         user_id,
         content,
-        created_at: new Date(),
+        // created_at: new Date(),
+        created_at: created_at ? new Date(created_at) : new Date(),
       },
     });
 
@@ -108,12 +149,22 @@ export class TodoService {
       where: { todo_id: id },
     });
     if (!todo || todo.user_id !== user.user_id) {
-      throw new Error('삭제 권한이 없습니다.');
+      throw new ForbiddenException('삭제를 할 수 없습니다.');
     }
-    const data = await this.prisma.todos.delete({
+    // 로그 기록
+    await this.prisma.todo_logs.create({
+      data: {
+        todo_id: todo.todo_id,
+        user_id: todo.user_id,
+        action: 'DELETE',
+        created_at: new Date(),
+      },
+    });
+
+    await this.prisma.todos.delete({
       where: { todo_id: id },
     });
-    return data;
+    return { meesage: '삭제 완료' };
   }
 
   // 할 일 수정
