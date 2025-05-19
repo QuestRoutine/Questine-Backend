@@ -20,7 +20,7 @@ export class TodoService {
         user_id,
       },
       orderBy: {
-        todo_id: 'desc',
+        completed: 'asc',
       },
     });
     return data;
@@ -130,13 +130,13 @@ export class TodoService {
   // 할 일 추가
   async addTodo(user: users, addTodoDto: AddTodoDto) {
     const { user_id } = user;
-    const { content, created_at } = addTodoDto;
+    const { content, due_at } = addTodoDto;
     const data = await this.prisma.todos.create({
       data: {
         user_id,
         content,
-        // created_at: new Date(),
-        created_at: created_at ? new Date(created_at) : new Date(),
+        due_at: due_at ? new Date(due_at) : new Date(),
+        // created_at: created_at ? new Date(created_at) : new Date(),
       },
     });
 

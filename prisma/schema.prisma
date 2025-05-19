@@ -23,6 +23,7 @@ model users {
   level         Int?        @default(1)
   refresh_token String?
   exp_logs      exp_logs[]
+  profile       profile?
   todo_logs     todo_logs[]
   todos         todos[]
 }
@@ -37,6 +38,7 @@ model todos {
   created_at   DateTime?   @default(now()) @db.Timestamptz(6)
   completed_at DateTime?   @db.Timestamptz(6)
   updated_at   DateTime?   @default(now()) @db.Timestamptz(6)
+  due_at       DateTime?   @db.Timestamptz(6)
   exp_logs     exp_logs[]
   todo_logs    todo_logs[]
   users        users       @relation(fields: [user_id], references: [user_id], onDelete: Cascade, onUpdate: NoAction)
@@ -60,4 +62,20 @@ model todo_logs {
   created_at  DateTime? @db.Timestamptz(6)
   todos       todos?    @relation(fields: [todo_id], references: [todo_id], onUpdate: NoAction)
   users       users?    @relation(fields: [user_id], references: [user_id], onUpdate: NoAction)
+}
+
+model profile {
+  profile_id            Int       @id @default(autoincrement())
+  user_id               Int       @unique
+  avatar_url            String?
+  join_date             DateTime  @default(dbgenerated("CURRENT_DATE")) @db.Date
+  total_completed_tasks Int?      @default(0)
+  current_streak        Int?      @default(0)
+  longest_streak        Int?      @default(0)
+  weekly_avg_completion Int?      @default(0)
+  most_productive_day   String?
+  most_productive_time  String?
+  created_at            DateTime? @default(now()) @db.Timestamptz(6)
+  updated_at            DateTime? @default(now()) @db.Timestamptz(6)
+  users                 users     @relation(fields: [user_id], references: [user_id], onDelete: Cascade, onUpdate: NoAction)
 }

@@ -67,7 +67,6 @@ export class AuthService {
 
     return { accessToken, refreshToken };
   }
-
   async signin(authDto: AuthDto) {
     const { email, password } = authDto;
 
@@ -141,8 +140,7 @@ export class AuthService {
 
   async getMe(user: users) {
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    const { refresh_token, password, login_type, push_token, ...userData } =
-      user;
+    const { refresh_token, password, push_token, ...userData } = user;
     return userData;
   }
   async deleteAccount(user: users) {

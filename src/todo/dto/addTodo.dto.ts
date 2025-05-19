@@ -5,5 +5,5 @@ export class AddTodoDto {
   content: string;
 
   @IsDate()
-  created_at: Date;
+  due_at: Date;
 }
