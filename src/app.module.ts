@@ -2,6 +2,7 @@ import { Module } from '@nestjs/common';
 import { AuthModule } from './auth/auth.module';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { TodoModule } from './todo/todo.module';
+import { AchievementsModule } from './achievements/achievements.module';
 
 @Module({
   imports: [
@@ -10,6 +11,7 @@ import { TodoModule } from './todo/todo.module';
     }),
     AuthModule,
     TodoModule,
+    AchievementsModule,
   ],
   controllers: [],
   providers: [ConfigService],
