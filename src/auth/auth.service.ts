@@ -1,9 +1,11 @@
+import { EditMeDto } from './dto/editMe';
 import {
   BadRequestException,
   ConflictException,
   ForbiddenException,
   Injectable,
   InternalServerErrorException,
+  NotFoundException,
   UnauthorizedException,
 } from '@nestjs/common';
 import { AuthDto } from './dto/auth.dto';
@@ -152,6 +154,60 @@ export class AuthService {
     } catch (error) {
       console.log(error);
       throw new BadRequestException('탈퇴가 불가능합니다.');
+    }
+  }
+
+  async editMe(user: users, editMeDto: EditMeDto) {
+    const { nickname } = editMeDto;
+
+    try {
+      return await this.prisma.$transaction(async (prisma) => {
+        const profile = await prisma.users.findUnique({
+          where: {
+            user_id: user.user_id,
+          },
+        });
+
+        if (!profile) {
+          throw new NotFoundException('존재하지 않는 프로필입니다.');
+        }
+
+        // 닉네임 중복 확인
+        const existingUserWithNickname = await prisma.users.findFirst({
+          where: {
+            nickname: nickname,
+            user_id: {
+              not: user.user_id,
+            },
+          },
+        });
+
+        if (existingUserWithNickname) {
+          throw new ConflictException('이미 사용 중인 닉네임입니다.');
+        }
+
+        const updatedProfile = await prisma.users.update({
+          where: {
+            user_id: user.user_id,
+          },
+          data: {
+            nickname,
+          },
+        });
+
+        return updatedProfile;
+      });
+    } catch (error) {
+      console.log(error);
+      if (
+        error instanceof NotFoundException ||
+        error instanceof ConflictException
+      ) {
+        throw error;
+      }
+      throw new InternalServerErrorException(
+        '프로필 편집 중 에러가 발생했습니다.',
+      );
     }
   }
 }
