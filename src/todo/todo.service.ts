@@ -91,6 +91,7 @@ export class TodoService {
             user_id: todo.user_id,
             action: 'COMPLETE',
             created_at: new Date(),
+            todo_id_snapshot: todo.todo_id,
           },
         });
         // 업적 체크 등 추가 로직 (예정)
@@ -158,6 +159,7 @@ export class TodoService {
         user_id: todo.user_id,
         action: 'DELETE',
         created_at: new Date(),
+        todo_id_snapshot: todo.todo_id,
       },
     });
 
