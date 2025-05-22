@@ -8,24 +8,21 @@ import { AchievementsService } from './achievements.service';
 export class AchievementController {
   constructor(private readonly achievementsService: AchievementsService) {}
 
+  // 모든 업적 및 진행 상황 조회
   @Get('/')
   @UseGuards(AuthGuard())
-  findAllAchievements(@User() user: users) {
-    return this.achievementsService.findAllAchievements(user);
+  getAllAchievements(@User() user: users) {
+    return this.achievementsService.getAllAchievements(user);
   }
 
+  // 사용자 업적 조회
   @Get('/user')
   @UseGuards(AuthGuard())
   getUserAchievements(@User() user: users) {
     return this.achievementsService.getUserAchievements(user);
   }
 
-  @Get('/user/:achievementId')
-  @UseGuards(AuthGuard())
-  getUserAchievementDetail(@User() user: users) {
-    return this.achievementsService.getUserAchievementDetail(user);
-  }
-
+  // 업적 해금
   @Post('/unlock/:achievementId')
   @UseGuards(AuthGuard())
   unlockAchievement(@User() user: users, @Param('achievementId') id: string) {

@@ -11,8 +11,34 @@ export class AchievementsService {
     this.achievementConditions = new AchievementConditions(this.prisma);
   }
 
-  async findAllAchievements(user: users) {
-    return await this.prisma.achievements.findMany();
+  /**
+   * 모든 업적 및 진행 상황 조회
+   * * is_unlocked: 업적 해금 여부
+   * * unlocked_at: 업적이 해금된 날짜
+   * * progress: 업적의 진행 상황 (0 ~ max_progress)
+   */
+  async getAllAchievements(user: users) {
+    const allAchievements = await this.prisma.achievements.findMany();
+    const userProgress = await this.prisma.achievement_progress.findMany({
+      where: { user_id: user.user_id },
+    });
+    const result = allAchievements.map((achievement) => {
+      const userAchievement = userProgress.find(
+        (progress) => progress.achievement_id === achievement.achievement_id,
+      );
+
+      return {
+        ...achievement,
+        is_unlocked: userAchievement ? userAchievement.is_unlocked : false,
+        unlocked_at: userAchievement ? userAchievement.unlocked_at : null,
+        progress: userAchievement ? userAchievement.progress : 0,
+      };
+    });
+
+    return {
+      message: '모든 업적과 유저의 달성 현황을 불러왔습니다.',
+      data: result,
+    };
   }
 
   async getUserAchievements(user: users) {
@@ -36,6 +62,20 @@ export class AchievementsService {
           data: [],
         };
       }
+      // 해당 업적을 해금한 유저 수 조회
+      const achievementCount = await this.prisma.achievement_progress.groupBy({
+        by: ['achievement_id'],
+        _count: {
+          user_id: true,
+        },
+      });
+
+      const achievementCountMap = new Map(
+        achievementCount.map((count) => [
+          count.achievement_id,
+          count._count.user_id,
+        ]),
+      );
 
       const formattedAchievements = userAchievements.map((userAchievement) => {
         const { achievements, ...userAchievementData } = userAchievement;
@@ -50,6 +90,9 @@ export class AchievementsService {
           reward_gold: achievements.reward_gold,
           created_at: achievements.created_at,
           updated_at: achievements.updated_at,
+          unlocked_user_count: achievementCountMap.get(
+            userAchievement.achievement_id,
+          ),
         };
       });
 
@@ -67,11 +110,6 @@ export class AchievementsService {
       };
     }
   }
-
-  async getUserAchievementDetail(user: users) {
-    return;
-  }
-
   async unlockAchievement(user: users, id: number) {
     try {
       // 업적 존재 여부 확인
