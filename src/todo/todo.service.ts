@@ -35,11 +35,12 @@ export class TodoService {
     const todo = await this.prisma.todos.findUnique({
       where: { todo_id: id },
     });
-    if (!todo) throw new Error('할 일이 없습니다.');
+    if (!todo) throw new BadRequestException('할 일이 없습니다.');
+
     if (!todo.completed && !todo.exp_given) {
       await this.prisma.$transaction(async (prisma) => {
         // 완료 처리
-        await prisma.todos.update({
+        const updatedTodo = await prisma.todos.update({
           where: { todo_id: id },
           data: {
             completed: true,
@@ -50,41 +51,59 @@ export class TodoService {
           },
         });
 
-        // 경험치 지급
-        await prisma.users.update({
-          where: { user_id: todo.user_id },
-          data: { exp: { increment: 100 } },
+        // 사용자 정보 조회
+        // 캐릭터 이름을 사용자 닉네임으로 설정
+        const user = await prisma.users.findUnique({
+          where: { user_id: updatedTodo.user_id },
+          select: { nickname: true },
         });
 
-        // 경험치 로그 기록
-        await prisma.exp_logs.create({
-          data: {
-            user_id: todo.user_id,
-            todo_id: todo.todo_id,
-            exp: 100,
-            created_at: new Date(),
+        if (!user) {
+          throw new BadRequestException('사용자를 찾을 수 없습니다.');
+        }
+
+        // 캐릭터 업데이트
+        const characterName = user.nickname;
+
+        await prisma.characters.upsert({
+          where: {
+            user_id_character_name: {
+              user_id: updatedTodo.user_id,
+              character_name: characterName,
+            },
+          },
+          update: {
+            exp: { increment: updatedTodo.exp_reward },
+            updated_at: new Date(),
+          },
+          create: {
+            user_id: updatedTodo.user_id,
+            character_name: characterName,
           },
         });
 
-        // 레벨업 체크 및 처리
-        const updatedUser = await prisma.users.findUnique({
-          where: { user_id: todo.user_id },
-          select: { exp: true, level: true },
-        });
-        // console.log(updatedUser);
-        const expPerLevel = 1000;
-        const newLevel = Math.floor(updatedUser.exp / expPerLevel) + 1;
-        if (newLevel > updatedUser.level) {
-          await prisma.users.update({
-            where: { user_id: todo.user_id },
-            data: {
-              level: newLevel,
-              exp: 0, // 레벨업 시 경험치 0으로 초기화
+        // 캐릭터 조회 및 경험치 로그 기록
+        const character = await prisma.characters.findUnique({
+          where: {
+            user_id_character_name: {
+              user_id: updatedTodo.user_id,
+              character_name: characterName,
             },
-          });
-        }
+          },
+          select: { character_id: true },
+        });
 
-        // 로그 기록
+        await prisma.exp_logs.create({
+          data: {
+            user_id: updatedTodo.user_id,
+            todo_id: updatedTodo.todo_id,
+            exp: updatedTodo.exp_reward,
+            created_at: new Date(),
+            character_id: character.character_id,
+          },
+        });
+
+        // todo 로그 기록
         await prisma.todo_logs.create({
           data: {
             todo_id: todo.todo_id,
@@ -94,9 +113,11 @@ export class TodoService {
             todo_id_snapshot: todo.todo_id,
           },
         });
+
         // 업적 체크 등 추가 로직 (예정)
       });
-      // 트랜잭션 이후 최신 exp_reward 값 조회
+
+      // 트랜잭션이 완료된 후에 exp_reward 값을 조회하여 반환
       const updatedTodo = await this.prisma.todos.findUnique({
         where: { todo_id: id },
         select: { exp_reward: true, exp_given: true },
@@ -108,6 +129,7 @@ export class TodoService {
     } else if (!todo.completed && todo.exp_given) {
       // 미완료된 할일을 체크했지만 해당 할 일에서 경험치를 먹은 이력이 있을 경우
       // 경험치 중복 획득 방지 (최초 1회만 획득)
+      // 경험치 지급 여부 업데이트
       await this.prisma.todos.update({
         where: { todo_id: id },
         data: {
@@ -125,6 +147,15 @@ export class TodoService {
         exp: updatedTodo.exp_reward,
         exp_given: updatedTodo.exp_given,
       };
+    } else if (todo.completed && todo.exp_given) {
+      // 이미 완료된 할 일이고 경험치도 지급된 경우
+      return {
+        exp: todo.exp_reward,
+        exp_given: true,
+      };
+    } else {
+      // 예외 상황 처리 (예상치 못한 상태)
+      throw new BadRequestException('처리할 수 없는 할 일 상태입니다.');
     }
   }
 
