@@ -15,13 +15,6 @@ export class AchievementController {
     return this.achievementsService.getAllAchievements(user);
   }
 
-  // 사용자 업적 조회
-  @Get('/user')
-  @UseGuards(AuthGuard())
-  getUserAchievements(@User() user: users) {
-    return this.achievementsService.getUserAchievements(user);
-  }
-
   // 업적 해금
   @Post('/unlock/:achievementId')
   @UseGuards(AuthGuard())

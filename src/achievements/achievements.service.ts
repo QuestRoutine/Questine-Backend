@@ -17,32 +17,10 @@ export class AchievementsService {
    * * unlocked_at: 업적이 해금된 날짜
    * * progress: 업적의 진행 상황 (0 ~ max_progress)
    */
+
   async getAllAchievements(user: users) {
-    const allAchievements = await this.prisma.achievements.findMany();
-    const userProgress = await this.prisma.achievement_progress.findMany({
-      where: { user_id: user.user_id },
-    });
-    const result = allAchievements.map((achievement) => {
-      const userAchievement = userProgress.find(
-        (progress) => progress.achievement_id === achievement.achievement_id,
-      );
-
-      return {
-        ...achievement,
-        is_unlocked: userAchievement ? userAchievement.is_unlocked : false,
-        unlocked_at: userAchievement ? userAchievement.unlocked_at : null,
-        progress: userAchievement ? userAchievement.progress : 0,
-      };
-    });
-
-    return {
-      message: '모든 업적과 유저의 달성 현황을 불러왔습니다.',
-      data: result,
-    };
-  }
-
-  async getUserAchievements(user: users) {
     try {
+      const allAchievements = await this.prisma.achievements.findMany();
       const userAchievements = await this.prisma.achievement_progress.findMany({
         where: {
           user_id: user.user_id,
@@ -62,9 +40,13 @@ export class AchievementsService {
           data: [],
         };
       }
+
       // 해당 업적을 해금한 유저 수 조회
       const achievementCount = await this.prisma.achievement_progress.groupBy({
         by: ['achievement_id'],
+        where: {
+          is_unlocked: true,
+        },
         _count: {
           user_id: true,
         },
@@ -76,35 +58,28 @@ export class AchievementsService {
           count._count.user_id,
         ]),
       );
-
-      const formattedAchievements = userAchievements.map((userAchievement) => {
-        const { achievements, ...userAchievementData } = userAchievement;
-
+      const formattedAchievements = allAchievements.map((achievement) => {
+        const userAchievement = userAchievements.find(
+          (progress) => progress.achievement_id === achievement.achievement_id,
+        );
         return {
-          ...userAchievementData,
-          title: achievements.title,
-          description: achievements.description,
-          icon: achievements.icon,
-          max_progress: achievements.max_progress,
-          reward_xp: achievements.reward_xp,
-          reward_gold: achievements.reward_gold,
-          created_at: achievements.created_at,
-          updated_at: achievements.updated_at,
-          unlocked_user_count: achievementCountMap.get(
-            userAchievement.achievement_id,
-          ),
+          ...achievement,
+          is_unlocked: userAchievement ? userAchievement.is_unlocked : false,
+          unlocked_at: userAchievement ? userAchievement.unlocked_at : null,
+          progress: userAchievement ? userAchievement.progress : 0,
+          unlocked_user_count:
+            achievementCountMap.get(achievement.achievement_id) || 0,
+          user_id: user.user_id,
         };
       });
 
       return {
-        success: true,
-        message: '내가 획득한 업적 목록을 불러왔습니다.',
+        message: '업적 목록을 불러왔습니다.',
         data: formattedAchievements,
       };
     } catch (error) {
       console.error('업적 조회 중 오류 발생:', error);
       return {
-        success: false,
         message: '업적 목록을 불러오는 중 오류가 발생했습니다.',
         error: error.message,
       };
