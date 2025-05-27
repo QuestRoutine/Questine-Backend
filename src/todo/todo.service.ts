@@ -5,12 +5,17 @@ import {
 } from '@nestjs/common';
 import { users } from 'generated/prisma';
 import { PrismaService } from 'src/prisma.service';
-import { AddTodoDto } from './dto/addTodo.dto';
-import { EditTodoDto } from './dto/editTodo.dto';
+import { AddTodoDto } from './dto/add-todo.dto';
+import { EditTodoDto } from './dto/edit-todo.dto';
+import { CalculateStreak } from './calculate-streak';
 
 @Injectable()
 export class TodoService {
-  constructor(private readonly prisma: PrismaService) {}
+  private calculateStreak: CalculateStreak;
+
+  constructor(private readonly prisma: PrismaService) {
+    this.calculateStreak = new CalculateStreak(this.prisma);
+  }
 
   // 할 일 목록
   async getTodos(user: users) {
@@ -61,6 +66,20 @@ export class TodoService {
         if (!user) {
           throw new BadRequestException('사용자를 찾을 수 없습니다.');
         }
+        // streak 계산
+        const longestStreak = await this.calculateStreak.calculateStreak(
+          updatedTodo.user_id,
+        );
+
+        // streak 업데이트
+        await prisma.profile.update({
+          where: { user_id: updatedTodo.user_id },
+          data: {
+            longest_streak: longestStreak.longestStreak,
+            current_streak: longestStreak.currentStreak,
+            updated_at: new Date(),
+          },
+        });
 
         // 캐릭터 업데이트
         const characterName = user.nickname;
@@ -102,6 +121,52 @@ export class TodoService {
             character_id: character.character_id,
           },
         });
+
+        // 캐릭터 경험치 레벨업 검증 및 처리
+        const characterWithExp = await prisma.characters.findUnique({
+          where: {
+            user_id_character_name: {
+              user_id: updatedTodo.user_id,
+              character_name: characterName,
+            },
+          },
+          select: { character_id: true, exp: true, level: true },
+        });
+
+        let { exp, level } = characterWithExp;
+
+        while (true) {
+          // 현재 레벨의 요구 경험치 조회
+          const levelRequirement = await prisma.level_requirements.findUnique({
+            where: { level },
+          });
+          if (!levelRequirement) break;
+
+          if (exp >= levelRequirement.required_exp) {
+            // 레벨업 처리
+            exp -= levelRequirement.required_exp;
+            level += 1;
+
+            // 캐릭터 레벨/경험치 업데이트
+            await prisma.characters.update({
+              where: { character_id: characterWithExp.character_id },
+              data: { level, exp, updated_at: new Date() },
+            });
+
+            // 레벨업 로그 기록
+            await prisma.level_up_logs.create({
+              data: {
+                character_id: characterWithExp.character_id,
+                previous_level: level - 1,
+                new_level: level,
+                leveled_up_at: new Date(),
+              },
+            });
+          } else {
+            // 더 이상 레벨업 불가
+            break;
+          }
+        }
 
         // todo 로그 기록
         await prisma.todo_logs.create({
