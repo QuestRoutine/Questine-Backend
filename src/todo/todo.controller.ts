@@ -12,8 +12,8 @@ import { TodoService } from './todo.service';
 import { AuthGuard } from '@nestjs/passport';
 import { User } from 'src/common/user.decorator';
 import { users } from 'generated/prisma';
-import { AddTodoDto } from './dto/addTodo.dto';
-import { EditTodoDto } from './dto/editTodo.dto';
+import { AddTodoDto } from './dto/add-todo.dto';
+import { EditTodoDto } from './dto/edit-todo.dto';
 
 @Controller('todo')
 export class TodoController {

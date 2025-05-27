@@ -13,7 +13,7 @@ import { AuthDto } from './dto/auth.dto';
 import { User } from 'src/common/user.decorator';
 import { AuthGuard } from '@nestjs/passport';
 import { users } from 'generated/prisma';
-import { EditMeDto } from './dto/editMe';
+import { EditMeDto } from './dto/edit-me';
 
 @Controller('auth')
 export class AuthController {

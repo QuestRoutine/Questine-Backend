@@ -1,4 +1,4 @@
-import { EditMeDto } from './dto/editMe';
+import { EditMeDto } from './dto/edit-me';
 import {
   BadRequestException,
   ConflictException,
@@ -74,6 +74,7 @@ export class AuthService {
 
     const user = await this.prisma.users.findUnique({
       where: { email },
+      include: { profile: true },
     });
 
     const isPasswordValid = user
@@ -94,6 +95,14 @@ export class AuthService {
         updated_at: new Date(),
       },
     });
+    // 프로필(profile) 생성
+    if (!user.profile) {
+      await this.prisma.profile.create({
+        data: {
+          user_id: user.user_id,
+        },
+      });
+    }
 
     return { accessToken, refreshToken };
   }
