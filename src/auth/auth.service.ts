@@ -150,10 +150,22 @@ export class AuthService {
   }
 
   async getMe(user: users) {
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    const { refresh_token, password, push_token, ...userData } = user;
-    return userData;
+    const profile = await this.prisma.profile.findUnique({
+      where: {
+        user_id: user.user_id,
+      },
+    });
+    if (!profile) {
+      throw new NotFoundException('프로필이 존재하지 않습니다.');
+    }
+
+    const { nickname } = user;
+    return {
+      nickname,
+      ...profile,
+    };
   }
+
   async deleteAccount(user: users) {
     try {
       await this.prisma.users.delete({
