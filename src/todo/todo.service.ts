@@ -36,11 +36,15 @@ export class TodoService {
   - 경험치 지급
   - 업적 체크
   */
-  async completeTodo(id: number): Promise<{ exp: number; exp_given: boolean }> {
+  async completeTodo(
+    id: number,
+  ): Promise<{ exp: number; exp_given: boolean; leveledUp?: boolean }> {
     const todo = await this.prisma.todos.findUnique({
       where: { todo_id: id },
     });
     if (!todo) throw new BadRequestException('할 일이 없습니다.');
+
+    let leveledUp = false;
 
     if (!todo.completed && !todo.exp_given) {
       await this.prisma.$transaction(async (prisma) => {
@@ -146,7 +150,7 @@ export class TodoService {
             // 레벨업 처리
             exp -= levelRequirement.required_exp;
             level += 1;
-
+            leveledUp = true;
             // 캐릭터 레벨/경험치 업데이트
             await prisma.characters.update({
               where: { character_id: characterWithExp.character_id },
@@ -163,7 +167,6 @@ export class TodoService {
               },
             });
           } else {
-            // 더 이상 레벨업 불가
             break;
           }
         }
@@ -190,6 +193,7 @@ export class TodoService {
       return {
         exp: updatedTodo.exp_reward,
         exp_given: updatedTodo.exp_given,
+        leveledUp,
       };
     } else if (!todo.completed && todo.exp_given) {
       // 미완료된 할일을 체크했지만 해당 할 일에서 경험치를 먹은 이력이 있을 경우
@@ -211,12 +215,14 @@ export class TodoService {
       return {
         exp: updatedTodo.exp_reward,
         exp_given: updatedTodo.exp_given,
+        leveledUp: false,
       };
     } else if (todo.completed && todo.exp_given) {
       // 이미 완료된 할 일이고 경험치도 지급된 경우
       return {
         exp: todo.exp_reward,
         exp_given: true,
+        leveledUp: false,
       };
     } else {
       // 예외 상황 처리 (예상치 못한 상태)
@@ -248,6 +254,56 @@ export class TodoService {
     if (!todo || todo.user_id !== user.user_id) {
       throw new ForbiddenException('삭제를 할 수 없습니다.');
     }
+
+    let leveledDown = false;
+
+    // 경험치 회수 로직 추가
+    if (todo.exp_given && todo.exp_reward > 0) {
+      // 캐릭터 이름(닉네임)으로 캐릭터 조회
+      const character = await this.prisma.characters.findUnique({
+        where: {
+          user_id_character_name: {
+            user_id: todo.user_id,
+            character_name: user.nickname,
+          },
+        },
+      });
+      if (character) {
+        const expToRemove = todo.exp_reward;
+        let newExp = character.exp - expToRemove;
+        let newLevel = character.level;
+        // 레벨 다운 로직
+        while (newExp < 0 && newLevel > 1) {
+          const prevLevelRequirement =
+            await this.prisma.level_requirements.findUnique({
+              where: { level: newLevel - 1 },
+            });
+          if (!prevLevelRequirement) break;
+          newLevel -= 1;
+          newExp += prevLevelRequirement.required_exp;
+          leveledDown = true;
+        }
+        if (newExp < 0) newExp = 0;
+        await this.prisma.characters.update({
+          where: { character_id: character.character_id },
+          data: {
+            exp: newExp,
+            level: newLevel,
+            updated_at: new Date(),
+          },
+        });
+        await this.prisma.exp_logs.create({
+          data: {
+            user_id: todo.user_id,
+            todo_id: todo.todo_id,
+            exp: -todo.exp_reward,
+            created_at: new Date(),
+            character_id: character.character_id,
+          },
+        });
+      }
+    }
+
     // 로그 기록
     await this.prisma.todo_logs.create({
       data: {
@@ -262,7 +318,7 @@ export class TodoService {
     await this.prisma.todos.delete({
       where: { todo_id: id },
     });
-    return { meesage: '삭제 완료' };
+    return { meesage: '삭제 완료', leveledDown };
   }
 
   // 할 일 수정
