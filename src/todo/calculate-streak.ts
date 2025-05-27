@@ -17,9 +17,14 @@ export class CalculateStreak {
         completed_at: 'desc',
       },
     });
+    const todayStr = new Date().toISOString().slice(0, 10);
 
     const dates = Array.from(
-      new Set(data.map((t) => t.completed_at.toISOString().slice(0, 10))),
+      new Set(
+        data
+          .map((v) => v.completed_at.toISOString().slice(0, 10))
+          .filter((date) => date <= todayStr),
+      ),
     );
 
     let streak = 0;
