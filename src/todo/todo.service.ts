@@ -25,7 +25,7 @@ export class TodoService {
         user_id,
       },
       orderBy: {
-        completed: 'asc',
+        due_at: 'desc',
       },
     });
     return data;
