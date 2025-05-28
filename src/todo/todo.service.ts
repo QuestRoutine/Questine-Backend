@@ -25,7 +25,7 @@ export class TodoService {
         user_id,
       },
       orderBy: {
-        due_at: 'desc',
+        created_at: 'desc',
       },
     });
     return data;
@@ -43,6 +43,24 @@ export class TodoService {
       where: { todo_id: id },
     });
     if (!todo) throw new BadRequestException('할 일이 없습니다.');
+
+    // 부정행위 검증: 15초 이내 10개 이상 완료 시
+    const now = new Date();
+    const fifteenSecondsAgo = new Date(now.getTime() - 15000);
+    const recentCompletedCount = await this.prisma.todos.count({
+      where: {
+        user_id: todo.user_id,
+        completed: true,
+        completed_at: { gte: fifteenSecondsAgo },
+      },
+    });
+    if (recentCompletedCount >= 10) {
+      throw new BadRequestException({
+        message:
+          '과도하게 빠른 시간 내 완료하시는 경우, 부정행위로 의심받으실 수 있으니 주의해주세요.',
+        cheatingDetected: true,
+      });
+    }
 
     let leveledUp = false;
 
@@ -251,7 +269,10 @@ export class TodoService {
     const todo = await this.prisma.todos.findUnique({
       where: { todo_id: id },
     });
-    if (!todo || todo.user_id !== user.user_id) {
+    if (!todo) {
+      return { message: '이미 삭제된 할 일입니다.', leveledDown: false };
+    }
+    if (todo.user_id !== user.user_id) {
       throw new ForbiddenException('삭제를 할 수 없습니다.');
     }
 
