@@ -159,6 +159,22 @@ export class AuthService {
       throw new NotFoundException('프로필이 존재하지 않습니다.');
     }
 
+    const totalCompletedTasks = await this.prisma.todos.count({
+      where: {
+        user_id: user.user_id,
+        completed: true,
+      },
+    });
+
+    await this.prisma.profile.update({
+      where: {
+        user_id: user.user_id,
+      },
+      data: {
+        total_completed_tasks: totalCompletedTasks,
+      },
+    });
+
     const { nickname } = user;
     return {
       nickname,

@@ -130,6 +130,7 @@ export class TodoService {
           create: {
             user_id: updatedTodo.user_id,
             character_name: characterName,
+            exp: updatedTodo.exp_reward,
           },
         });
 
