@@ -9,6 +9,9 @@ export class CalculateStreak {
       where: {
         user_id: userId,
         completed: true,
+        completed_at: {
+          not: null,
+        },
       },
       select: {
         completed_at: true,
@@ -22,6 +25,7 @@ export class CalculateStreak {
     const dates = Array.from(
       new Set(
         data
+          .filter((v) => v.completed_at !== null)
           .map((v) => v.completed_at.toISOString().slice(0, 10))
           .filter((date) => date <= todayStr),
       ),
