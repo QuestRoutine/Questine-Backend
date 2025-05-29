@@ -151,9 +151,7 @@ export class AuthService {
 
   async getMe(user: users) {
     const profile = await this.prisma.profile.findUnique({
-      where: {
-        user_id: user.user_id,
-      },
+      where: { user_id: user.user_id },
     });
     if (!profile) {
       throw new NotFoundException('프로필이 존재하지 않습니다.');
@@ -166,19 +164,13 @@ export class AuthService {
       },
     });
 
-    await this.prisma.profile.update({
-      where: {
-        user_id: user.user_id,
-      },
-      data: {
-        total_completed_tasks: totalCompletedTasks,
-      },
-    });
-
     const { nickname } = user;
     return {
-      nickname,
       ...profile,
+      nickname,
+      statistics: {
+        totalCompletedTasks,
+      },
     };
   }
 
