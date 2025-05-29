@@ -17,21 +17,31 @@ export class TodoService {
     this.calculateStreak = new CalculateStreak(this.prisma);
   }
 
-  // 할 일 목록
-  async getTodos(user: users) {
+  // 할 일 목록 (월별 전체 조회)
+  async getTodos(user: users, year: number, month: number) {
     const { user_id } = user;
+    // 월의 시작과 끝 날짜 계산
+    const startDate = new Date(year, month - 1, 1);
+    const endDate = new Date(year, month, 0, 23, 59, 59, 999);
+    console.log(startDate, endDate);
     const data = await this.prisma.todos.findMany({
       where: {
         user_id,
+        due_at: {
+          gte: startDate,
+          lte: endDate,
+        },
       },
-      orderBy: {
-        created_at: 'desc',
-      },
+      orderBy: [
+        { completed: 'asc' },
+        { created_at: 'desc' },
+        { due_at: 'asc' },
+      ],
     });
     return data;
   }
 
-  /* 할 일 완료 시 
+  /* 할 일 완료 시
   - 로그 기록
   - 경험치 지급
   - 업적 체크

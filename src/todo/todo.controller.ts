@@ -6,6 +6,7 @@ import {
   Param,
   Post,
   Put,
+  Query,
   UseGuards,
 } from '@nestjs/common';
 import { TodoService } from './todo.service';
@@ -21,8 +22,12 @@ export class TodoController {
 
   @Get('/')
   @UseGuards(AuthGuard())
-  getTodos(@User() user: users) {
-    return this.todoService.getTodos(user);
+  getTodos(
+    @User() user: users,
+    @Query('year') year?: string,
+    @Query('month') month?: string,
+  ) {
+    return this.todoService.getTodos(user, +year, +month);
   }
 
   @Post('/')
