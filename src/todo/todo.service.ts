@@ -21,8 +21,8 @@ export class TodoService {
   async getTodos(user: users, year: number, month: number) {
     const { user_id } = user;
     // 월의 시작과 끝 날짜 계산
-    const startDate = new Date(year, month - 1, 1);
-    const endDate = new Date(year, month, 0, 23, 59, 59, 999);
+    const startDate = new Date(Date.UTC(year, month - 1, 1, 0, 0, 0, 0));
+    const endDate = new Date(Date.UTC(year, month, 0, 23, 59, 59, 999));
     console.log(startDate, endDate);
     const data = await this.prisma.todos.findMany({
       where: {
@@ -32,11 +32,14 @@ export class TodoService {
           lte: endDate,
         },
       },
-      orderBy: [
-        { completed: 'asc' },
-        { created_at: 'desc' },
-        { due_at: 'asc' },
-      ],
+      select: {
+        todo_id: true,
+        content: true,
+        completed: true,
+        created_at: true,
+        due_at: true,
+        exp_reward: true,
+      },
     });
     return data;
   }
@@ -64,10 +67,9 @@ export class TodoService {
         completed_at: { gte: fifteenSecondsAgo },
       },
     });
-    if (recentCompletedCount >= 10) {
+    if (recentCompletedCount >= 2) {
       throw new BadRequestException({
-        message:
-          '과도하게 빠른 시간 내 완료하시는 경우, 부정행위로 의심받으실 수 있으니 주의해주세요.',
+        message: '너무 빨라요! 잠시 후 다시 시도해주세요.',
         cheatingDetected: true,
       });
     }
