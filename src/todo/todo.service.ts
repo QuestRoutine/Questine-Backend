@@ -67,7 +67,7 @@ export class TodoService {
         completed_at: { gte: fifteenSecondsAgo },
       },
     });
-    if (recentCompletedCount >= 2) {
+    if (recentCompletedCount >= 10) {
       throw new BadRequestException({
         message: '너무 빨라요! 잠시 후 다시 시도해주세요.',
         cheatingDetected: true,
@@ -120,10 +120,8 @@ export class TodoService {
 
         await prisma.characters.upsert({
           where: {
-            user_id_character_name: {
-              user_id: updatedTodo.user_id,
-              character_name: characterName,
-            },
+            user_id: updatedTodo.user_id,
+            character_name: characterName,
           },
           update: {
             exp: { increment: updatedTodo.exp_reward },
@@ -139,10 +137,8 @@ export class TodoService {
         // 캐릭터 조회 및 경험치 로그 기록
         const character = await prisma.characters.findUnique({
           where: {
-            user_id_character_name: {
-              user_id: updatedTodo.user_id,
-              character_name: characterName,
-            },
+            user_id: updatedTodo.user_id,
+            character_name: characterName,
           },
           select: { character_id: true },
         });
@@ -160,10 +156,8 @@ export class TodoService {
         // 캐릭터 경험치 레벨업 검증 및 처리
         const characterWithExp = await prisma.characters.findUnique({
           where: {
-            user_id_character_name: {
-              user_id: updatedTodo.user_id,
-              character_name: characterName,
-            },
+            user_id: updatedTodo.user_id,
+            character_name: characterName,
           },
           select: { character_id: true, exp: true, level: true },
         });
@@ -296,10 +290,8 @@ export class TodoService {
       // 캐릭터 이름(닉네임)으로 캐릭터 조회
       const character = await this.prisma.characters.findUnique({
         where: {
-          user_id_character_name: {
-            user_id: todo.user_id,
-            character_name: user.nickname,
-          },
+          user_id: todo.user_id,
+          character_name: user.nickname,
         },
       });
       if (character) {

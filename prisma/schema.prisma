@@ -49,15 +49,14 @@ model todos {
 }
 
 model exp_logs {
-  exp_log_id   Int         @id @default(autoincrement())
+  exp_log_id   Int       @id @default(autoincrement())
   user_id      Int?
   todo_id      Int?
   character_id Int?
   exp          Int
-  created_at   DateTime?   @default(now()) @db.Timestamptz(6)
-  characters   characters? @relation(fields: [character_id], references: [character_id], onUpdate: NoAction)
-  todos        todos?      @relation(fields: [todo_id], references: [todo_id], onUpdate: NoAction)
-  users        users?      @relation(fields: [user_id], references: [user_id], onUpdate: NoAction)
+  created_at   DateTime? @default(now()) @db.Timestamptz(6)
+  todos        todos?    @relation(fields: [todo_id], references: [todo_id], onUpdate: NoAction)
+  users        users?    @relation(fields: [user_id], references: [user_id], onUpdate: NoAction)
 }
 
 model todo_logs {
@@ -115,45 +114,37 @@ model achievement_progress {
 }
 
 model character_items {
-  character_item_id Int         @id @default(autoincrement())
+  character_item_id Int       @id @default(autoincrement())
   character_id      Int?
   item_id           Int?
-  quantity          Int?        @default(1)
+  quantity          Int?      @default(1)
   durability        Int?
-  is_equipped       Boolean?    @default(false)
-  acquired_at       DateTime?   @default(now()) @db.Timestamptz(6)
-  characters        characters? @relation(fields: [character_id], references: [character_id], onDelete: Cascade, onUpdate: NoAction)
-  items             items?      @relation(fields: [item_id], references: [item_id], onDelete: Cascade, onUpdate: NoAction)
+  is_equipped       Boolean?  @default(false)
+  acquired_at       DateTime? @default(now()) @db.Timestamptz(6)
+  items             items?    @relation(fields: [item_id], references: [item_id], onDelete: Cascade, onUpdate: NoAction)
 
   @@unique([character_id, item_id])
 }
 
 model characters {
-  character_id    Int               @id @default(autoincrement())
-  user_id         Int               @unique(map: "unique_user_id")
-  character_name  String            @db.VarChar
-  level           Int               @default(1)
-  exp             Int               @default(0)
-  gold            Int               @default(0)
-  created_at      DateTime          @default(now()) @db.Timestamptz(6)
-  updated_at      DateTime          @default(now()) @db.Timestamptz(6)
-  character_items character_items[]
-  users           users             @relation(fields: [user_id], references: [user_id], onDelete: Cascade, onUpdate: NoAction)
-  equipped_items  equipped_items[]
-  exp_logs        exp_logs[]
-  level_up_logs   level_up_logs[]
-
-  @@unique([user_id, character_name])
+  character_id   Int      @id @default(autoincrement())
+  user_id        Int      @unique
+  character_name String   @db.VarChar
+  level          Int      @default(1)
+  exp            Int      @default(0)
+  gold           Int      @default(0)
+  created_at     DateTime @default(now()) @db.Timestamptz(6)
+  updated_at     DateTime @default(now()) @db.Timestamptz(6)
+  users          users    @relation(fields: [user_id], references: [user_id], onDelete: Cascade, onUpdate: NoAction)
 }
 
 model equipped_items {
-  equipped_item_id Int        @id @default(autoincrement())
+  equipped_item_id Int       @id @default(autoincrement())
   character_id     Int
   item_id          Int
   slot             String
-  equipped_at      DateTime?  @default(now()) @db.Timestamptz(6)
-  characters       characters @relation(fields: [character_id], references: [character_id], onDelete: Cascade, onUpdate: NoAction)
-  items            items      @relation(fields: [item_id], references: [item_id], onDelete: NoAction, onUpdate: NoAction)
+  equipped_at      DateTime? @default(now()) @db.Timestamptz(6)
+  items            items     @relation(fields: [item_id], references: [item_id], onDelete: NoAction, onUpdate: NoAction)
 
   @@unique([character_id, slot])
 }
@@ -180,12 +171,11 @@ model level_requirements {
 }
 
 model level_up_logs {
-  level_up_log_id Int         @id @default(autoincrement())
+  level_up_log_id Int       @id @default(autoincrement())
   character_id    Int?
   previous_level  Int
   new_level       Int
-  leveled_up_at   DateTime?   @default(now()) @db.Timestamptz(6)
-  characters      characters? @relation(fields: [character_id], references: [character_id], onDelete: Cascade, onUpdate: NoAction)
+  leveled_up_at   DateTime? @default(now()) @db.Timestamptz(6)
 }
 
 model user_exp_ranking {

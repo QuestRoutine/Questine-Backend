@@ -28,10 +28,8 @@ export class CharactersService {
     try {
       const character = await this.prisma.characters.findUnique({
         where: {
-          user_id_character_name: {
-            user_id,
-            character_name,
-          },
+          user_id,
+          character_name,
         },
       });
       if (!character) {
