@@ -4,6 +4,7 @@ import { ConfigModule, ConfigService } from '@nestjs/config';
 import { TodoModule } from './todo/todo.module';
 import { AchievementsModule } from './achievements/achievements.module';
 import { CharactersModule } from './characters/characters.module';
+import { RankModule } from './rank/rank.module';
 
 @Module({
   imports: [
@@ -14,6 +15,7 @@ import { CharactersModule } from './characters/characters.module';
     TodoModule,
     AchievementsModule,
     CharactersModule,
+    RankModule,
   ],
   controllers: [],
   providers: [ConfigService],
