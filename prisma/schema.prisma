@@ -41,6 +41,8 @@ model todos {
   exp_logs     exp_logs[]
   todo_logs    todo_logs[]
   users        users       @relation(fields: [user_id], references: [user_id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@index([user_id, due_at], map: "idx_todos_user_id_due_at")
 }
 
 model exp_logs {
