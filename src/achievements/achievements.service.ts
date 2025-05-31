@@ -33,14 +33,6 @@ export class AchievementsService {
         },
       });
 
-      if (userAchievements.length === 0) {
-        return {
-          success: true,
-          message: '획득한 업적이 없습니다.',
-          data: [],
-        };
-      }
-
       // 해당 업적을 해금한 유저 수 조회
       const achievementCount = await this.prisma.achievement_progress.groupBy({
         by: ['achievement_id'],
