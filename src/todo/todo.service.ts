@@ -8,6 +8,7 @@ import { PrismaService } from 'src/prisma.service';
 import { AddTodoDto } from './dto/add-todo.dto';
 import { EditTodoDto } from './dto/edit-todo.dto';
 import { CalculateStreak } from './calculate-streak';
+import dayjs from 'dayjs';
 
 @Injectable()
 export class TodoService {
@@ -21,8 +22,10 @@ export class TodoService {
   async getTodos(user: users, year: number, month: number) {
     const { user_id } = user;
     // 월의 시작과 끝 날짜 계산
-    const startDate = new Date(Date.UTC(year, month - 1, 1, 0, 0, 0, 0));
-    const endDate = new Date(Date.UTC(year, month, 0, 23, 59, 59, 999));
+    const startDate = dayjs(`${year}-${month}-01 00:00:00`).toDate();
+    const endDate = dayjs(`${year}-${month}-01 00:00:00`)
+      .endOf('month')
+      .toDate();
     console.log(startDate, endDate);
     const data = await this.prisma.todos.findMany({
       where: {
