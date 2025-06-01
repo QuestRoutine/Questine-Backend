@@ -214,6 +214,15 @@ export class AuthService {
         if (existingUserWithNickname) {
           throw new ConflictException('이미 사용 중인 닉네임입니다.');
         }
+        // 닉네임 변경 시, 캐릭터 이름도 변경
+        await prisma.characters.updateMany({
+          where: {
+            user_id: user.user_id,
+          },
+          data: {
+            character_name: nickname,
+          },
+        });
 
         const updatedProfile = await prisma.users.update({
           where: {
