@@ -1,5 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { PrismaService } from 'src/prisma.service';
+import { getLevelImageUrl } from 'src/utils/getLevelImageUrl';
 
 @Injectable()
 export class CharactersService {
@@ -39,10 +40,13 @@ export class CharactersService {
           data: null,
         };
       }
+
       return {
         success: true,
         message: '캐릭터를 조회했습니다.',
-        data: character,
+        data: {
+          character,
+        },
       };
     } catch (error) {
       return {
@@ -67,6 +71,10 @@ export class CharactersService {
           data: null,
         };
       }
+
+      // 레벨별 이미지 URL
+      const imageUrl = getLevelImageUrl(character.level);
+
       const levelRequirement = await this.prisma.level_requirements.findUnique({
         where: { level: character.level },
       });
@@ -74,6 +82,7 @@ export class CharactersService {
         message: '캐릭터를 조회했습니다.',
         data: {
           ...character,
+          image_url: imageUrl,
           // 캐릭터의 레벨에 해당하는 레벨 요구사항 조회
           nextLevelExp: levelRequirement ? levelRequirement.required_exp : 0, // 다음 레벨의 경험치 요구량
           // 남은 경험치 표시

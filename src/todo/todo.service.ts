@@ -9,12 +9,16 @@ import { AddTodoDto } from './dto/add-todo.dto';
 import { EditTodoDto } from './dto/edit-todo.dto';
 import { CalculateStreak } from './calculate-streak';
 import dayjs from 'dayjs';
+import { EventEmitter2 } from '@nestjs/event-emitter';
 
 @Injectable()
 export class TodoService {
   private calculateStreak: CalculateStreak;
 
-  constructor(private readonly prisma: PrismaService) {
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly eventEmitter: EventEmitter2,
+  ) {
     this.calculateStreak = new CalculateStreak(this.prisma);
   }
 
@@ -97,7 +101,7 @@ export class TodoService {
         // 캐릭터 이름을 사용자 닉네임으로 설정
         const user = await prisma.users.findUnique({
           where: { user_id: updatedTodo.user_id },
-          select: { nickname: true },
+          select: { user_id: true, nickname: true },
         });
 
         if (!user) {
@@ -210,7 +214,8 @@ export class TodoService {
           },
         });
 
-        // 업적 체크 등 추가 로직 (예정)
+        // 업적 체크
+        this.eventEmitter.emit('todo.completed', { user, todoId: id });
       });
 
       // 트랜잭션이 완료된 후에 exp_reward 값을 조회하여 반환
@@ -227,6 +232,8 @@ export class TodoService {
       // 미완료된 할일을 체크했지만 해당 할 일에서 경험치를 먹은 이력이 있을 경우
       // 경험치 중복 획득 방지 (최초 1회만 획득)
       // 경험치 지급 여부 업데이트
+      // 업적 트리거 이벤트 발행
+
       await this.prisma.todos.update({
         where: { todo_id: id },
         data: {

@@ -113,19 +113,6 @@ model achievement_progress {
   @@id([user_id, achievement_id])
 }
 
-model character_items {
-  character_item_id Int       @id @default(autoincrement())
-  character_id      Int?
-  item_id           Int?
-  quantity          Int?      @default(1)
-  durability        Int?
-  is_equipped       Boolean?  @default(false)
-  acquired_at       DateTime? @default(now()) @db.Timestamptz(6)
-  items             items?    @relation(fields: [item_id], references: [item_id], onDelete: Cascade, onUpdate: NoAction)
-
-  @@unique([character_id, item_id])
-}
-
 model characters {
   character_id   Int      @id @default(autoincrement())
   user_id        Int      @unique
@@ -135,34 +122,8 @@ model characters {
   gold           Int      @default(0)
   created_at     DateTime @default(now()) @db.Timestamptz(6)
   updated_at     DateTime @default(now()) @db.Timestamptz(6)
+  image_url      String?
   users          users    @relation(fields: [user_id], references: [user_id], onDelete: Cascade, onUpdate: NoAction)
-}
-
-model equipped_items {
-  equipped_item_id Int       @id @default(autoincrement())
-  character_id     Int
-  item_id          Int
-  slot             String
-  equipped_at      DateTime? @default(now()) @db.Timestamptz(6)
-  items            items     @relation(fields: [item_id], references: [item_id], onDelete: NoAction, onUpdate: NoAction)
-
-  @@unique([character_id, slot])
-}
-
-model items {
-  item_id         Int               @id @default(autoincrement())
-  name            String            @db.VarChar
-  type            String
-  price           Int
-  required_level  Int?              @default(1)
-  description     String?
-  image_url       String?
-  stats           Json?
-  effect          String?
-  created_at      DateTime?         @default(now()) @db.Timestamptz(6)
-  updated_at      DateTime?         @default(now()) @db.Timestamptz(6)
-  character_items character_items[]
-  equipped_items  equipped_items[]
 }
 
 model level_requirements {

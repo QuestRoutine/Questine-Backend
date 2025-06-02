@@ -2,6 +2,7 @@ import { Injectable } from '@nestjs/common';
 import { users } from 'generated/prisma';
 import { PrismaService } from 'src/prisma.service';
 import { AchievementConditions } from './achievement-conditions';
+import { OnEvent } from '@nestjs/event-emitter';
 
 @Injectable()
 export class AchievementsService {
@@ -77,6 +78,17 @@ export class AchievementsService {
       };
     }
   }
+
+  @OnEvent('todo.completed')
+  async handleTodoCompleted(payload: { user: users; todoId: number }) {
+    const { user } = payload;
+    const relatedAchievementIds = Array.from({ length: 10 }, (_, i) => i + 1);
+
+    for (const id of relatedAchievementIds) {
+      await this.unlockAchievement(user, id);
+    }
+  }
+
   async unlockAchievement(user: users, id: number) {
     try {
       // 업적 존재 여부 확인

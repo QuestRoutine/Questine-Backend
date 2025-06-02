@@ -5,12 +5,20 @@ import { TodoModule } from './todo/todo.module';
 import { AchievementsModule } from './achievements/achievements.module';
 import { CharactersModule } from './characters/characters.module';
 import { RankModule } from './rank/rank.module';
+import { EventEmitterModule } from '@nestjs/event-emitter';
+import { ServeStaticModule } from '@nestjs/serve-static';
+import { join } from 'path';
 
 @Module({
   imports: [
     ConfigModule.forRoot({
       isGlobal: true,
     }),
+    ServeStaticModule.forRoot({
+      rootPath: join(__dirname, '..', 'assets'),
+      serveRoot: '/assets/',
+    }),
+    EventEmitterModule.forRoot(),
     AuthModule,
     TodoModule,
     AchievementsModule,
@@ -18,6 +26,6 @@ import { RankModule } from './rank/rank.module';
     RankModule,
   ],
   controllers: [],
-  providers: [ConfigService],
+  providers: [],
 })
 export class AppModule {}
