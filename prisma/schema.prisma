@@ -9,25 +9,23 @@ datasource db {
 }
 
 model users {
-  user_id                  Int                        @id @default(autoincrement())
-  login_type               String?
-  email                    String                     @unique @db.VarChar
-  password                 String                     @db.VarChar
-  nickname                 String?                    @unique @db.VarChar
-  push_token               String?
-  created_at               DateTime                   @default(now()) @db.Timestamptz(6)
-  updated_at               DateTime                   @default(now()) @db.Timestamptz(6)
-  deleted_at               DateTime?                  @db.Timestamptz(6)
-  refresh_token            String?
-  achievement_progress     achievement_progress[]
-  characters               characters?
-  exp_logs                 exp_logs[]
-  profile                  profile?
-  todo_logs                todo_logs[]
-  todos                    todos[]
-  user_exp_ranking         user_exp_ranking?
-  user_streak_ranking      user_streak_ranking[]
-  user_weekly_todo_ranking user_weekly_todo_ranking[]
+  user_id              Int                    @id @default(autoincrement())
+  login_type           String?
+  email                String                 @unique @db.VarChar
+  password             String                 @db.VarChar
+  nickname             String?                @unique @db.VarChar
+  push_token           String?
+  created_at           DateTime               @default(now()) @db.Timestamptz(6)
+  updated_at           DateTime               @default(now()) @db.Timestamptz(6)
+  deleted_at           DateTime?              @db.Timestamptz(6)
+  refresh_token        String?
+  achievement_progress achievement_progress[]
+  characters           characters?
+  exp_logs             exp_logs[]
+  profile              profile?
+  ranking              ranking?
+  todo_logs            todo_logs[]
+  todos                todos[]
 }
 
 model todos {
@@ -49,14 +47,15 @@ model todos {
 }
 
 model exp_logs {
-  exp_log_id   Int       @id @default(autoincrement())
+  exp_log_id   Int         @id @default(autoincrement())
   user_id      Int?
   todo_id      Int?
   character_id Int?
   exp          Int
-  created_at   DateTime? @default(now()) @db.Timestamptz(6)
-  todos        todos?    @relation(fields: [todo_id], references: [todo_id], onUpdate: NoAction)
-  users        users?    @relation(fields: [user_id], references: [user_id], onUpdate: NoAction)
+  created_at   DateTime?   @default(now()) @db.Timestamptz(6)
+  characters   characters? @relation(fields: [character_id], references: [character_id], onUpdate: NoAction)
+  todos        todos?      @relation(fields: [todo_id], references: [todo_id], onUpdate: NoAction)
+  users        users?      @relation(fields: [user_id], references: [user_id], onUpdate: NoAction)
 }
 
 model todo_logs {
@@ -114,16 +113,17 @@ model achievement_progress {
 }
 
 model characters {
-  character_id   Int      @id @default(autoincrement())
-  user_id        Int      @unique
-  character_name String   @db.VarChar
-  level          Int      @default(1)
-  exp            Int      @default(0)
-  gold           Int      @default(0)
-  created_at     DateTime @default(now()) @db.Timestamptz(6)
-  updated_at     DateTime @default(now()) @db.Timestamptz(6)
-  image_url      String?
-  users          users    @relation(fields: [user_id], references: [user_id], onDelete: Cascade, onUpdate: NoAction)
+  character_id   Int             @id @default(autoincrement())
+  user_id        Int             @unique
+  character_name String          @db.VarChar
+  level          Int             @default(1)
+  exp            Int             @default(0)
+  gold           Int             @default(0)
+  created_at     DateTime        @default(now()) @db.Timestamptz(6)
+  updated_at     DateTime        @default(now()) @db.Timestamptz(6)
+  users          users           @relation(fields: [user_id], references: [user_id], onDelete: Cascade, onUpdate: NoAction)
+  exp_logs       exp_logs[]
+  level_up_logs  level_up_logs[]
 }
 
 model level_requirements {
@@ -132,44 +132,20 @@ model level_requirements {
 }
 
 model level_up_logs {
-  level_up_log_id Int       @id @default(autoincrement())
+  level_up_log_id Int         @id @default(autoincrement())
   character_id    Int?
   previous_level  Int
   new_level       Int
-  leveled_up_at   DateTime? @default(now()) @db.Timestamptz(6)
+  leveled_up_at   DateTime?   @default(now()) @db.Timestamptz(6)
+  characters      characters? @relation(fields: [character_id], references: [character_id], onDelete: Cascade, onUpdate: NoAction)
 }
 
-model user_exp_ranking {
+model ranking {
   ranking_id    Int      @id @default(autoincrement())
   user_id       Int      @unique
   total_exp     Int      @default(0)
-  rank          Int
   level         Int      @default(1)
   nickname      String   @db.VarChar
   calculated_at DateTime @default(now()) @db.Timestamptz(6)
-  rank_change   Int?     @default(0)
   users         users    @relation(fields: [user_id], references: [user_id], onDelete: Cascade, onUpdate: NoAction)
-}
-
-model user_streak_ranking {
-  ranking_id     Int      @id @default(autoincrement())
-  user_id        Int
-  current_streak Int      @default(0)
-  rank           Int
-  calculated_at  DateTime @default(now()) @db.Timestamptz(6)
-  users          users    @relation(fields: [user_id], references: [user_id], onDelete: Cascade, onUpdate: NoAction)
-
-  @@unique([user_id, calculated_at])
-}
-
-model user_weekly_todo_ranking {
-  ranking_id      Int      @id @default(autoincrement())
-  user_id         Int
-  week_start      DateTime @db.Date
-  completed_todos Int      @default(0)
-  rank            Int
-  calculated_at   DateTime @default(now()) @db.Timestamptz(6)
-  users           users    @relation(fields: [user_id], references: [user_id], onDelete: Cascade, onUpdate: NoAction)
-
-  @@unique([user_id, week_start])
 }
