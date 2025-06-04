@@ -7,8 +7,8 @@ export class RankCronService {
   constructor(private readonly prisma: PrismaService) {}
 
   // 매일 00시에 전체 경험치 랭킹 집계
-  @Cron(CronExpression.EVERY_10_SECONDS)
-  // @Cron(CronExpression.EVERY_DAY_AT_MIDNIGHT)
+  // @Cron(CronExpression.EVERY_10_SECONDS)
+  @Cron(CronExpression.EVERY_HOUR)
   async updateExpRanking() {
     const character = await this.prisma.characters.findMany({
       select: {
@@ -21,7 +21,7 @@ export class RankCronService {
 
     let rank = 1;
     for (const user of character) {
-      const prevRanking = await this.prisma.user_exp_ranking.findUnique({
+      const prevRanking = await this.prisma.ranking.findUnique({
         where: { user_id: user.user_id },
         select: {
           level: true,
@@ -45,16 +45,15 @@ export class RankCronService {
         : (prevRanking?.calculated_at ?? new Date());
 
       console.log(
-        `Updating rank for user ${user.user_id} - Rank: ${rank}, Level: ${level}, Exp: ${user.exp}, Nickname: ${nickname}, Calculated At: ${calculatedAtToSave}`,
+        `${user.user_id} - Rank: ${rank}, Level: ${level}, Exp: ${user.exp}, Nickname: ${nickname}, Calculated At: ${calculatedAtToSave}`,
       );
 
-      await this.prisma.user_exp_ranking.upsert({
+      await this.prisma.ranking.upsert({
         where: {
           user_id: user.user_id,
         },
         update: {
           total_exp: user.exp,
-          rank,
           level,
           nickname,
           calculated_at: calculatedAtToSave,
@@ -62,7 +61,6 @@ export class RankCronService {
         create: {
           user_id: user.user_id,
           total_exp: user.exp,
-          rank,
           level,
           nickname,
           calculated_at: new Date(),

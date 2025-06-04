@@ -6,13 +6,13 @@ import { getLevelImageUrl } from 'src/utils/getLevelImageUrl';
 export class RankService {
   constructor(private readonly prisma: PrismaService) {}
   async getRank() {
-    const rankings = await this.prisma.user_exp_ranking.findMany({
+    const rankings = await this.prisma.ranking.findMany({
       orderBy: [
         { level: 'desc' },
         { total_exp: 'desc' },
         { calculated_at: 'asc' },
       ],
-      take: 100,
+      take: 30,
     });
     const result = await Promise.all(
       rankings.map(async (rank) => {
