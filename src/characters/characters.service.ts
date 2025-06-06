@@ -5,25 +5,15 @@ import { getLevelImageUrl } from 'src/utils/getLevelImageUrl';
 @Injectable()
 export class CharactersService {
   constructor(private readonly prisma: PrismaService) {}
-  async getAllCharacters() {
-    try {
-      const characters = await this.prisma.characters.findMany({
-        orderBy: {
-          created_at: 'desc',
-        },
-      });
-      return {
-        success: true,
-        message: '모든 캐릭터를 조회했습니다.',
-        data: characters,
-      };
-    } catch (error) {
-      return {
-        success: false,
-        message: '캐릭터 조회 중 오류가 발생했습니다.',
-        error: error.message,
-      };
-    }
+  async getUsersAverageLevel() {
+    const result = await this.prisma.characters.aggregate({
+      _avg: {
+        level: true,
+      },
+    });
+    return {
+      avgLevel: result._avg.level,
+    };
   }
   async getCharacterById(user_id: number, character_name: string) {
     try {
