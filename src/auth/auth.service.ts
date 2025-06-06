@@ -163,6 +163,13 @@ export class AuthService {
         completed: true,
       },
     });
+    // 획득한 업적 개수
+    const achievementsCount = await this.prisma.achievement_progress.count({
+      where: {
+        user_id: user.user_id,
+        is_unlocked: true,
+      },
+    });
 
     const { nickname } = user;
     return {
@@ -170,6 +177,7 @@ export class AuthService {
       nickname,
       statistics: {
         totalCompletedTasks,
+        achievementsCount,
       },
     };
   }
